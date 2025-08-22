@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: saas-admin-portal
+  labels:
+    app: saas-admin-portal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: saas-admin-portal
+  template:
+    metadata:
+      labels:
+        app: saas-admin-portal
+    spec:
+      containers:
+      - name: saas-admin-portal
+        image: saas-admin-portal:latest
+        ports:
+        - containerPort: 3002
+        env:
+        - name: VITE_API_BASE_URL
+          value: "http://saas-api:8001/api/v1"
+        - name: VITE_APP_NAME
+          value: "SaaS Admin Portal"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: saas-admin-portal-service
+spec:
+  selector:
+    app: saas-admin-portal
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3002
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: saas-admin-portal-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: admin.saas.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: saas-admin-portal-service
+            port:
+              number: 80
